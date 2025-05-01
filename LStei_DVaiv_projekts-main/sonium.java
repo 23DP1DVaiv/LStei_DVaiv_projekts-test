@@ -7,9 +7,25 @@ import services.AlbumService;
 import services.RatingService;
 import services.UserService;
 
-public class main {
+public class sonium {
     public static void main(String[] args) {
         try (Scanner scanner = new Scanner(System.in)) {
+    
+            System.out.println("""
+
+              ██████  ▒█████   ███▄    █  ██▓ █    ██  ███▄ ▄███▓
+            ▒██    ▒ ▒██▒  ██▒ ██ ▀█   █ ▓██▒ ██  ▓██▒▓██▒▀█▀ ██▒
+            ░ ▓██▄   ▒██░  ██▒▓██  ▀█ ██▒▒██▒▓██  ▒██░▓██    ▓██░
+              ▒   ██▒▒██   ██░▓██▒  ▐▌██▒░██░▓▓█  ░██░▒██    ▒██ 
+            ▒██████▒▒░ ████▓▒░▒██░   ▓██░░██░▒▒█████▓ ▒██▒   ░██▒
+            ▒ ▒▓▒ ▒ ░░ ▒░▒░▒░ ░ ▒░   ▒ ▒ ░▓  ░▒▓▒ ▒ ▒ ░ ▒░   ░  ░
+            ░ ░▒  ░ ░  ░ ▒ ▒░ ░ ░░   ░ ▒░ ▒ ░░░▒░ ░ ░ ░  ░      ░
+            ░  ░  ░  ░ ░ ░ ▒     ░   ░ ░  ▒ ░ ░░░ ░ ░ ░      ░   
+                  ░      ░ ░           ░  ░     ░            ░   
+                                                                 
+            
+            """);
+    
             AlbumService albumService = new AlbumService();
             RatingService ratingService = new RatingService();
             UserService userService = new UserService();
@@ -20,6 +36,7 @@ public class main {
 
             // Регистрация 
             User currentUser = userService.registerUser(username);
+            
             System.out.println("Hi, " + currentUser.getUsername() + "!");
 
             while (true) {
