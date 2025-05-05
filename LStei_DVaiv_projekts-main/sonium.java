@@ -1,3 +1,4 @@
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Scanner;
 import models.Album;
@@ -5,13 +6,15 @@ import models.Rating;
 import models.User;
 import services.AlbumService;
 import services.RatingService;
+import services.RatingService.SortType;
 import services.UserService;
 
 public class sonium {
-    public static void main(String[] args) {
-        try (Scanner scanner = new Scanner(System.in)) {  // Создаем сканнер для чтения ввода с консоли
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
     
-            // Выводим ASCII-арт логотип приложения
+    public static void main(String[] args) {
+        try (Scanner scanner = new Scanner(System.in)) {
+                
             System.out.println("""
 
               ██████  ▒█████   ███▄    █  ██▓ █    ██  ███▄ ▄███▓
@@ -27,38 +30,33 @@ public class sonium {
             
             """);
     
-            // Инициализируем все необходимые сервисы
             AlbumService albumService = new AlbumService();
             RatingService ratingService = new RatingService();
             UserService userService = new UserService();
 
-            // Приветствие и запрос имени пользователя
             System.out.println("Welcome to Sonium!");
             System.out.print("Enter your name: ");
             String username = scanner.nextLine();
 
-            // Регистрация или получение существующего пользователя
+            // Регистрация 
             User currentUser = userService.registerUser(username);
-            
+
             System.out.println("Hi, " + currentUser.getUsername() + "!");
 
-            // Основной цикл программы
             while (true) {
-                // Показываем главное меню
-                System.out.println("Menu");
+                // Главное меню
+                System.out.println("\nMenu");
                 System.out.println("1. Find an album");
                 System.out.println("2. My albums");
                 System.out.println("3. Quit");
 
-                // Запрашиваем выбор пользователя
                 System.out.print("Choose: ");
                 String choice = scanner.nextLine();
 
                 switch (choice) {
-                    case "1" -> {  // Пользователь выбрал поиск альбома
+                    case "1" -> {
                         System.out.print("Enter album's name: ");
                         String query = scanner.nextLine();
-                        // Ищем альбомы по запросу
                         List<Album> foundAlbums = albumService.searchAlbums(query);
 
                         if (foundAlbums.isEmpty()) {
@@ -66,17 +64,19 @@ public class sonium {
                             break;
                         }
 
-                        // Выводим результаты поиска
+                        // Результат поиска
                         for (int i = 0; i < foundAlbums.size(); i++) {
                             System.out.println((i + 1) + ". " + foundAlbums.get(i));
                         }
 
-                        // Просим выбрать конкретный альбом
                         System.out.print("Choose album by number: ");
-                        int albumIndex = Integer.parseInt(scanner.nextLine()) - 1;  // -1 для индексации с 0
+                        int albumIndex = Integer.parseInt(scanner.nextLine()) - 1;
+                        if (albumIndex < 0 || albumIndex >= foundAlbums.size()) {
+                            System.out.println("Invalid choice.");
+                            break;
+                        }
                         Album selectedAlbum = foundAlbums.get(albumIndex);
 
-                        // Показываем выбранный альбом и предлагаем действия
                         System.out.println("You chose: " + selectedAlbum);
                         System.out.println("1. Mark as listened");
                         System.out.println("2. Rate an album");
@@ -85,17 +85,21 @@ public class sonium {
                         String action = scanner.nextLine();
 
                         switch (action) {
-                            case "1" -> {  // Отметить как прослушанное
+                            case "1" -> {
                                 ratingService.markAsListened(currentUser.getId(), selectedAlbum.getId());
                                 System.out.println("Marked as listened!");
                         }
-                            case "2" -> {  // Оценить альбом
+                            case "2" -> {
                                 System.out.print("Enter rating (1-5): ");
                                 int score = Integer.parseInt(scanner.nextLine());
+                                if (score < 1 || score > 5) {
+                                    System.out.println("Rating must be between 1 and 5.");
+                                    break;
+                                }
                                 ratingService.rateAlbum(currentUser.getId(), selectedAlbum.getId(), score);
                                 System.out.println("Thanks for your rating!");
                         }
-                            case "3" -> {  // Посмотреть среднюю оценку
+                            case "3" -> {
                                 double avgRating = ratingService.getAlbumAverageRating(selectedAlbum.getId());
                                 System.out.println("Average album's rating: " + avgRating);
                         }
@@ -103,35 +107,78 @@ public class sonium {
                         }
                     }
 
-                    case "2" -> {  // Пользователь выбрал просмотр своих альбомов
-                        // Получаем список прослушанных альбомов пользователя
-                        List<Rating> listened = ratingService.getUserListenedAlbums(currentUser.getId());
+                    case "2" -> {
+                        // Меню сортировки
+                        System.out.println("\nSort by:");
+                        System.out.println("1. Date added (newest first)");
+                        System.out.println("2. Date added (oldest first)");
+                        System.out.println("3. Rating (highest first)");
+                        System.out.println("4. Rating (lowest first)");
+                        
+                        System.out.print("Choose sorting option: ");
+                        String sortChoice = scanner.nextLine();
+                        
+                        SortType sortType;
+                        switch (sortChoice) {
+                            case "1" -> sortType = SortType.DATE_ADDED_DESC;
+                            case "2" -> sortType = SortType.DATE_ADDED_ASC;
+                            case "3" -> sortType = SortType.RATING_DESC;
+                            case "4" -> sortType = SortType.RATING_ASC;
+                            default -> {
+                                System.out.println("Invalid choice. Showing newest first.");
+                                sortType = SortType.DATE_ADDED_DESC;
+                            }
+                        }
+                        
+                        List<Rating> listened = ratingService.getUserListenedAlbums(currentUser.getId(), sortType);
                         if (listened.isEmpty()) {
                             System.out.println("You haven't listened any albums yet.");
                         } else {
-                            System.out.println("Your logged albums:");
-                            // Выводим информацию о каждом прослушанном альбоме
+                            
+                            final String RESET = "\u001B[0m";
+                            final String CYAN = "\u001B[36m";
+                            final String GREEN = "\u001B[32m";
+
+                            // Таблица
+                            System.out.println("\nYour logged albums:");
+                            System.out.println("+--------------------------------------------------------------------------------------+");
+                            System.out.printf("| %-3s | %-25s | %-15s | %-6s | %-20s |\n", "#", "Title", "Artist", "Rating", "Date Added");
+                            System.out.println("+--------------------------------------------------------------------------------------+");
+
+                            int counter = 1;
+                            boolean altColor = false;
                             for (Rating r : listened) {
                                 Album a = albumService.getAlbumById(r.getAlbumId());
-                                String info = a.getTitle() + " (" + a.getArtist() + ")";
-                                if (r.getRating() > 0) {
-                                    info += " - Rating: " + r.getRating();  // Добавляем оценку, если она есть
-                                }
-                                System.out.println(". " + info);
+                                if (a == null) continue;
+
+                                String color = altColor ? GREEN : CYAN;
+                                String ratingStr = r.getRating() > 0 ? String.valueOf(r.getRating()) : "N/A";
+                                String dateStr = r.getDateAdded().format(DATE_FORMAT);
+
+                                String title = a.getTitle();
+                                if (title.length() > 25) title = title.substring(0, 22) + "...";
+
+                                String artist = a.getArtist();
+                                if (artist.length() > 15) artist = artist.substring(0, 12) + "...";
+
+                                System.out.printf(color + "| %-3d | %-25s | %-15s | %-6s | %-20s |" + RESET + "\n",
+                                                counter++, title, artist, ratingStr, dateStr);
+
+                                altColor = !altColor;
                             }
+                            System.out.println("+--------------------------------------------------------------------------------------+");
                         }
+                        
                     }
 
-                    case "3" -> {  // Выход из программы
+                    case "3" -> {
                         System.out.println("Bye-bye!!!");
-                        return;  // Завершаем метод main и программу
+                        return;
                     }
 
-                    default -> System.out.println("Incorrect. Try again.");  // Некорректный выбор
+                    default -> System.out.println("Incorrect. Try again.");
                 }
             }
-        } catch (NumberFormatException e) {
-            // Пустой блок catch - исключение при парсинге чисел игнорируется
         }
     }
 }

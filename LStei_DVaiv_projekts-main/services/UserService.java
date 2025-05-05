@@ -7,25 +7,25 @@ import utils.CSVReader;
 import utils.CSVWriter;
 
 public class UserService {
-    private final String USER_FILE = "src\\databases\\users.csv";  // Путь к файлу с пользователями
+    private final String USER_FILE = "src\\databases\\users.csv";
 
-    // Метод регистрирует нового пользователя или возвращает существующего
+    // Регистрация 
     public User registerUser(String username) {
-        List<User> users = CSVReader.readUsers(USER_FILE);  // Загружаем всех пользователей
+        List<User> users = CSVReader.readUsers(USER_FILE);
     
-        // Проверяем, существует ли пользователь с таким именем (игнорируя регистр)
+        // Проверка существует ли пользователь
         for (User user : users) {
             if (user.getUsername().trim().equalsIgnoreCase(username.trim())) {
-                return user;  // Если существует, возвращаем найденного пользователя
+                return user; 
             }
         }
     
-        // Если пользователь не найден, создаем нового
-        String id = UUID.randomUUID().toString();  // Генерируем уникальный UUID
-        User newUser = new User(id, username.trim());  // Создаем объект пользователя
+        // Новый пользователь
+        String id = UUID.randomUUID().toString();
+        User newUser = new User(id, username.trim());
     
-        // Записываем нового пользователя в файл
+        // запись в csv
         CSVWriter.writeUser(USER_FILE, newUser);
-        return newUser;  // Возвращаем созданного пользователя
+        return newUser;
     }
 }
